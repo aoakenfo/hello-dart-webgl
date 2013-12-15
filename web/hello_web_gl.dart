@@ -37,12 +37,14 @@ void main() {
   gl.useProgram(program);
   
   int a_Position = gl.getAttribLocation(program, 'a_Position');
-  gl.vertexAttrib3f(a_Position, 0.0, 0.0, 0.0);
-  
   UniformLocation u_FragColor = gl.getUniformLocation(program, 'u_FragColor');
-  gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
-
+  
   var points = new List<Point>();
+  var colors = [
+    [1.0, 0.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 1.0],
+    [0.0, 0.0, 1.0, 1.0]
+  ];
   
   void onMouseDown(MouseEvent event) {
     num x = event.client.x;
@@ -64,8 +66,15 @@ void main() {
     
     gl.clear(COLOR_BUFFER_BIT);
     
+    int idx = -1;
+    var rgba = null;
     for(int i = 0; i < points.length; ++i) {
       gl.vertexAttrib3f(a_Position, points[i].x, points[i].y, 0.0);
+      
+      idx = ++idx % colors.length;
+      rgba = colors[idx];
+      gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
+      
       // ignore the warning "Attribute 0 is disabled. This has signficant performance penalty"
       gl.drawArrays(POINTS, 0, 1);
     }
