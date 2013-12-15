@@ -41,10 +41,38 @@ void main() {
   
   UniformLocation u_FragColor = gl.getUniformLocation(program, 'u_FragColor');
   gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
+
+  var points = new List<Point>();
+  
+  void onMouseDown(MouseEvent event) {
+    num x = event.client.x;
+    num y = event.client.y;
+    
+    // remove any default styling offset applied to canvas position
+    x -= canvas.offsetLeft;
+    y -= canvas.offsetTop;
+    
+    // translate to center
+    x -= (canvas.width  / 2);
+    y -= (canvas.height / 2);
+    
+    // scale 0-1
+    x /=  (canvas.width  / 2);
+    y /= -(canvas.height / 2); // flip y-axis
+    
+    points.add(new Point(x, y));
+    
+    gl.clear(COLOR_BUFFER_BIT);
+    
+    for(int i = 0; i < points.length; ++i) {
+      gl.vertexAttrib3f(a_Position, points[i].x, points[i].y, 0.0);
+      // ignore the warning "Attribute 0 is disabled. This has signficant performance penalty"
+      gl.drawArrays(POINTS, 0, 1);
+    }
+  }
+  
+  canvas.onMouseDown.listen((e) => onMouseDown(e) );
   
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
   gl.clear(COLOR_BUFFER_BIT);
-  
-  // ignore the warning "Attribute 0 is disabled. This has signficant performance penalty"
-  gl.drawArrays(POINTS, 0, 1);
 }

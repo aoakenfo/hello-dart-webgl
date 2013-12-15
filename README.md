@@ -1,6 +1,6 @@
 hello-web-gl
 ============
 
-A journey into learning WebGL.
+Learning WebGL and Dart.
 
-Each commit is a "lesson".
+Each commit corresponds to an incremental lesson.
