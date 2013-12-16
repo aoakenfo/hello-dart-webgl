@@ -6,7 +6,6 @@ String vertexShaderSource = '''
 attribute vec4 a_Position;
 void main() {
   gl_Position = a_Position;
-  gl_PointSize = 10.0;
 }
 ''';
 
@@ -56,6 +55,17 @@ void main() {
   
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
   gl.clear(COLOR_BUFFER_BIT);
+  
+  var idx = 0;
+  var modes = [TRIANGLES, LINES, LINE_STRIP, LINE_LOOP];
+  void onMouseDown(MouseEvent e) {
+    idx = ++idx % modes.length;
 
-  gl.drawArrays(POINTS, 0, vertices.length ~/ 2); 
+    gl.clear(COLOR_BUFFER_BIT);
+    gl.drawArrays(modes[idx], 0, vertices.length ~/ 2); 
+  }
+  
+  canvas.onMouseDown.listen((e) => onMouseDown(e));
+
+  gl.drawArrays(modes[idx], 0, vertices.length ~/ 2); 
 }
