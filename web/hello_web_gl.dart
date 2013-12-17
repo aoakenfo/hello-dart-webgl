@@ -51,15 +51,15 @@ void main() {
   gl.vertexAttribPointer(a_Position, 2, FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_Position);
   
-  var Tx = 0.0;
-  var Ty = 0.5;
-  var Tz = 0.0;
+  var Sx = 1.0;
+  var Sy = 0.5;
+  var Sz = 1.0;
   // column major order
   var modelMatrix = new Float32List.fromList([
-      1.0, 0.0, 0.0, 0.0,
-      0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 1.0, 0.0,
-      Tx,  Ty,  Tz,  1.0
+      Sx,  0.0, 0.0, 0.0,
+      0.0, Sy,  0.0, 0.0,
+      0.0, 0.0, Sz,  0.0,
+      0.0, 0.0, 0.0, 1.0
   ]);
   
   UniformLocation u_ModelMatrix = gl.getUniformLocation(program, 'u_ModelMatrix');
