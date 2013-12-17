@@ -1,6 +1,7 @@
 import 'dart:html';
 import 'dart:web_gl';
 import 'dart:typed_data';
+import 'dart:math';
 
 String vertexShaderSource = '''
 attribute vec4 a_Position;
@@ -51,15 +52,17 @@ void main() {
   gl.vertexAttribPointer(a_Position, 2, FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_Position);
   
-  var Sx = 1.0;
-  var Sy = 0.5;
-  var Sz = 1.0;
+  num angle = -90.0;
+  num radian = PI * angle / 180.0;
+  num sinB = sin(radian);
+  num cosB = cos(radian);
+  
   // column major order
   var modelMatrix = new Float32List.fromList([
-      Sx,  0.0, 0.0, 0.0,
-      0.0, Sy,  0.0, 0.0,
-      0.0, 0.0, Sz,  0.0,
-      0.0, 0.0, 0.0, 1.0
+      cosB, sinB, 0.0, 0.0,
+     -sinB, cosB, 0.0, 0.0,
+       0.0,  0.0, 1.0, 0.0,
+       0.0,  0.0, 0.0, 1.0
   ]);
   
   UniformLocation u_ModelMatrix = gl.getUniformLocation(program, 'u_ModelMatrix');
