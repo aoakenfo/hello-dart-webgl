@@ -37,9 +37,10 @@ void main() {
   gl.useProgram(program);
   
   var vertices = new Float32List.fromList([
-    0.0,  0.5,
-   -0.5, -0.5,
-    0.5, -0.5
+    -0.5,  0.5,
+    -0.5, -0.5,
+     0.5,  0.5,
+     0.5, -0.5
   ]);
   
   Buffer vertexBuffer = gl.createBuffer();
@@ -57,15 +58,14 @@ void main() {
   gl.clear(COLOR_BUFFER_BIT);
   
   var idx = 0;
-  var modes = [TRIANGLES, LINES, LINE_STRIP, LINE_LOOP];
-  void onMouseDown(MouseEvent e) {
+  var modes = [TRIANGLE_STRIP, TRIANGLE_FAN];
+  
+  canvas.onMouseDown.listen((e){
     idx = ++idx % modes.length;
 
     gl.clear(COLOR_BUFFER_BIT);
     gl.drawArrays(modes[idx], 0, vertices.length ~/ 2); 
-  }
-  
-  canvas.onMouseDown.listen((e) => onMouseDown(e));
+  });
 
   gl.drawArrays(modes[idx], 0, vertices.length ~/ 2); 
 }
