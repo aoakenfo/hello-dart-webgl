@@ -4,8 +4,9 @@ import 'dart:typed_data';
 
 String vertexShaderSource = '''
 attribute vec4 a_Position;
+uniform mat4 u_ModelMatrix;
 void main() {
-  gl_Position = a_Position;
+  gl_Position = u_ModelMatrix * a_Position;
 }
 ''';
 
@@ -37,9 +38,8 @@ void main() {
   gl.useProgram(program);
   
   var vertices = new Float32List.fromList([
-    -0.5,  0.5,
     -0.5, -0.5,
-     0.5,  0.5,
+     0.0,  0.5,
      0.5, -0.5
   ]);
   
@@ -51,21 +51,25 @@ void main() {
   gl.vertexAttribPointer(a_Position, 2, FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_Position);
   
+  var Tx = 0.0;
+  var Ty = 0.5;
+  var Tz = 0.0;
+  // column major order
+  var modelMatrix = new Float32List.fromList([
+      1.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, 1.0, 0.0,
+      Tx,  Ty,  Tz,  1.0
+  ]);
+  
+  UniformLocation u_ModelMatrix = gl.getUniformLocation(program, 'u_ModelMatrix');
+  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix);
+  
   UniformLocation u_FragColor = gl.getUniformLocation(program, 'u_FragColor');
   gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
   
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
   gl.clear(COLOR_BUFFER_BIT);
   
-  var idx = 0;
-  var modes = [TRIANGLE_STRIP, TRIANGLE_FAN];
-  
-  canvas.onMouseDown.listen((e){
-    idx = ++idx % modes.length;
-
-    gl.clear(COLOR_BUFFER_BIT);
-    gl.drawArrays(modes[idx], 0, vertices.length ~/ 2); 
-  });
-
-  gl.drawArrays(modes[idx], 0, vertices.length ~/ 2); 
+  gl.drawArrays(TRIANGLES, 0, 3); 
 }
