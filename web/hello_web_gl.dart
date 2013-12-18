@@ -61,7 +61,6 @@ void main() {
   
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
 
-  num angle = 0.0;
   num radian = 0.0;
   num sinB = 0.0;
   num cosB = 0.0;
@@ -73,7 +72,55 @@ void main() {
   ]);
   
   num lastTime = 0.0;
+  num angle = 0.0;
   num speed = 40.0;
+  num direction = 1;
+  
+  ButtonElement leftButton = new ButtonElement();
+  ButtonElement rightButton = new ButtonElement();
+  ButtonElement plusButton = new ButtonElement();
+  ButtonElement minusButton = new ButtonElement();
+  DivElement div = new DivElement();
+  
+  div.children.add(leftButton);
+  div.children.add(rightButton);
+  div.children.add(plusButton);
+  div.children.add(minusButton);
+  document.body.children.insert(0, div);
+  
+  leftButton
+    ..disabled = true
+    ..text = 'left'
+    ..onClick.listen((MouseEvent e) {
+        direction *= -1;
+        leftButton.disabled = true;
+        rightButton.disabled = false;
+    });
+
+  rightButton
+    ..text = 'right'
+    ..onClick.listen((MouseEvent e) {
+      direction *= -1;
+      leftButton.disabled = false;
+      rightButton.disabled = true;
+    });
+  
+  plusButton
+    ..text = '+'
+    ..onClick.listen((MouseEvent e) {
+      speed += 10;
+      minusButton.disabled = false;
+    });
+  
+  minusButton
+    ..text = '-'
+    ..onClick.listen((MouseEvent e) {
+      speed -= 10;
+      if(speed <= 0) {
+        minusButton.disabled = true;  
+      }
+    });
+  
   tick = (num highResTime) {
       
       window.requestAnimationFrame(animate);
@@ -81,7 +128,7 @@ void main() {
       num elapsedTime = highResTime - lastTime;
       lastTime = highResTime;
       
-      angle += (speed * elapsedTime / 1000.0);
+      angle += direction * (speed * elapsedTime / 1000.0);
       angle %= 360.0;
       radian = PI * angle / 180.0;
       sinB = sin(radian);
