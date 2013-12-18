@@ -19,6 +19,9 @@ void main() {
 }
 ''';
 
+var tick;
+var animate = (num highResTime) => tick(highResTime);
+
 void main() {
   
   CanvasElement canvas = querySelector('#canvas');
@@ -52,27 +55,48 @@ void main() {
   gl.vertexAttribPointer(a_Position, 2, FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_Position);
   
-  num angle = -90.0;
-  num radian = PI * angle / 180.0;
-  num sinB = sin(radian);
-  num cosB = cos(radian);
-  
-  // column major order
-  var modelMatrix = new Float32List.fromList([
-      cosB, sinB, 0.0, 0.0,
-     -sinB, cosB, 0.0, 0.0,
-       0.0,  0.0, 1.0, 0.0,
-       0.0,  0.0, 0.0, 1.0
-  ]);
-  
   UniformLocation u_ModelMatrix = gl.getUniformLocation(program, 'u_ModelMatrix');
-  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix);
-  
   UniformLocation u_FragColor = gl.getUniformLocation(program, 'u_FragColor');
   gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
   
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
-  gl.clear(COLOR_BUFFER_BIT);
+
+  num angle = 0.0;
+  num radian = 0.0;
+  num sinB = 0.0;
+  num cosB = 0.0;
+  var modelMatrix = new Float32List.fromList([
+       1.0, 0.0, 0.0, 0.0,
+       0.0, 1.0, 0.0, 0.0,
+       0.0, 0.0, 1.0, 0.0,
+       0.0, 0.0, 0.0, 1.0
+  ]);
   
-  gl.drawArrays(TRIANGLES, 0, 3); 
+  num lastTime = 0.0;
+  num speed = 40.0;
+  tick = (num highResTime) {
+      
+      window.requestAnimationFrame(animate);
+      
+      num elapsedTime = highResTime - lastTime;
+      lastTime = highResTime;
+      
+      angle += (speed * elapsedTime / 1000.0);
+      angle %= 360.0;
+      radian = PI * angle / 180.0;
+      sinB = sin(radian);
+      cosB = cos(radian);
+      
+      modelMatrix[0] =  cosB;
+      modelMatrix[1] =  sinB;
+      modelMatrix[4] = -sinB;
+      modelMatrix[5] =  cosB;
+      
+      gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix);
+      gl.clear(COLOR_BUFFER_BIT);
+      gl.drawArrays(TRIANGLES, 0, 3);
+      
+    };
+    
+    animate(0);
 }
