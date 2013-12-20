@@ -1,22 +1,23 @@
 import 'dart:html';
 import 'dart:web_gl';
 import 'dart:typed_data';
-import 'dart:math';
-import 'package:vector_math/vector_math.dart';
 
 String vertexShaderSource = '''
 attribute vec4 a_Position;
-uniform mat4 u_ModelMatrix;
+attribute vec4 a_Color;
+varying vec4 v_Color;
 void main() {
-  gl_Position = u_ModelMatrix * a_Position;
+  gl_Position = a_Position;
+  v_Color = a_Color;
 }
 ''';
 
 String fragmentShaderSource = '''
 precision mediump float;
+varying vec4 v_Color;
 uniform vec4 u_FragColor;
 void main() {
-  gl_FragColor = u_FragColor;
+  gl_FragColor = v_Color;
 }
 ''';
 
@@ -40,9 +41,9 @@ void main() {
   gl.useProgram(program);
   
   var vertices = new Float32List.fromList([
-    -0.5, -0.5,
-     0.0,  0.5,
-     0.5, -0.5
+    -0.5, -0.5, 1.0, 0.0, 0.0,
+     0.0,  0.5, 0.0, 1.0, 0.0,
+     0.5, -0.5, 0.0, 0.0, 1.0
   ]);
   
   Buffer vertexBuffer = gl.createBuffer();
@@ -50,18 +51,14 @@ void main() {
   gl.bufferDataTyped(ARRAY_BUFFER, vertices, STATIC_DRAW);
   
   int a_Position = gl.getAttribLocation(program, 'a_Position');
-  gl.vertexAttribPointer(a_Position, 2, FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(a_Position, 2, FLOAT, false, 
+      vertices.elementSizeInBytes * 5, 0);
   gl.enableVertexAttribArray(a_Position);
-  
-  Matrix4 modelMatrix = new Matrix4.identity()
-    ..rotateZ(-PI / 2)
-    ..translate(0.0, 1.0, 0.0);
-  
-  UniformLocation u_ModelMatrix = gl.getUniformLocation(program, 'u_ModelMatrix');
-  gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.storage);
-  
-  UniformLocation u_FragColor = gl.getUniformLocation(program, 'u_FragColor');
-  gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
+ 
+  int a_Color = gl.getAttribLocation(program, 'a_Color');
+  gl.vertexAttribPointer(a_Color, 3, FLOAT, false, 
+      vertices.elementSizeInBytes * 5, vertices.elementSizeInBytes * 2);
+  gl.enableVertexAttribArray(a_Color);
   
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
   gl.clear(COLOR_BUFFER_BIT);
