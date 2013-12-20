@@ -1,6 +1,7 @@
 import 'dart:html';
 import 'dart:web_gl';
 import 'dart:typed_data';
+import 'dart:async';
 
 String vertexShaderSource = '''
 attribute vec4 a_Position;
@@ -15,9 +16,12 @@ void main() {
 String fragmentShaderSource = '''
 precision mediump float;
 varying vec2 v_TexCoord;
-uniform sampler2D u_Sampler;
+uniform sampler2D u_Sampler0;
+uniform sampler2D u_Sampler1;
 void main() {
-  gl_FragColor = texture2D(u_Sampler, v_TexCoord);
+  vec4 color0 = texture2D(u_Sampler0, v_TexCoord);
+  vec4 color1 = texture2D(u_Sampler1, v_TexCoord);
+  gl_FragColor = color0 * color1;
 }
 ''';
 
@@ -64,24 +68,35 @@ void main() {
   // to load textures from disk:
   //  Run menu -> Manage Launches
   //  Browser arguments: --allow-file-access-from-files
-  Texture texture = gl.createTexture();
-  
-  ImageElement image = new ImageElement(src:'k.png');
-  image.onLoad.listen((e) {
-    gl.pixelStorei(UNPACK_FLIP_Y_WEBGL, 1);
-    
-    gl.activeTexture(TEXTURE0);
-    gl.bindTexture(TEXTURE_2D, texture);
-    
-    gl.texParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, LINEAR);
-    gl.texImage2D(TEXTURE_2D, 0, RGB, RGB, UNSIGNED_BYTE, image);
-    
-    UniformLocation u_Sampler = gl.getUniformLocation(program, 'u_Sampler');
-    gl.uniform1i(u_Sampler, 0);
+  Texture texture0 = gl.createTexture();
+  Texture texture1 = gl.createTexture();
 
-    gl.clear(COLOR_BUFFER_BIT);
-    gl.drawArrays(TRIANGLE_STRIP, 0, 4);
-  });
+  ImageElement image1 = new ImageElement(src:'k.png');
+  ImageElement image2 = new ImageElement(src:'h.png');
+  
+  Future.wait([image1.onLoad.first, image2.onLoad.first])
+    .then((_) {
+      
+      gl.pixelStorei(UNPACK_FLIP_Y_WEBGL, 1);
+      
+      gl.activeTexture(TEXTURE0);
+      gl.bindTexture(TEXTURE_2D, texture0);
+      gl.texParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, LINEAR);
+      gl.texImage2D(TEXTURE_2D, 0, RGB, RGB, UNSIGNED_BYTE, image1);
+      UniformLocation u_Sampler0 = gl.getUniformLocation(program, 'u_Sampler0');
+      gl.uniform1i(u_Sampler0, 0);
+      
+      gl.activeTexture(TEXTURE1);
+      gl.bindTexture(TEXTURE_2D, texture1);
+      gl.texParameteri(TEXTURE_2D, TEXTURE_MIN_FILTER, LINEAR);
+      gl.texImage2D(TEXTURE_2D, 0, RGB, RGB, UNSIGNED_BYTE, image2);
+      UniformLocation u_Sampler1 = gl.getUniformLocation(program, 'u_Sampler1');
+      gl.uniform1i(u_Sampler1, 1);
+
+      gl.clear(COLOR_BUFFER_BIT);
+      gl.drawArrays(TRIANGLE_STRIP, 0, 4);
+    
+    });
   
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
 }
