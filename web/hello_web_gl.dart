@@ -44,17 +44,13 @@ void main() {
   
   var vertices = new Float32List.fromList([
     // position         // color
-    0.0,  1.0,  0.0,    0.0,  0.0,  1.0, // front blue triangle 
-   -0.5, -1.0,  0.0,    0.0,  0.0,  1.0,
-    0.5, -1.0,  0.0,    0.0,  0.0,  1.0, 
-    
-    0.0,  1.0, -2.0,    1.0,  1.0,  0.0, // middle yellow triangle
-   -0.5, -1.0, -2.0,    1.0,  1.0,  0.0,
-    0.5, -1.0, -2.0,    1.0,  1.0,  0.0, 
+    0.0,  2.5,  -5.0,   0.0,  1.0,  0.0, // green triangle
+   -2.5, -2.5,  -5.0,   0.0,  1.0,  0.0,
+    2.5, -2.5,  -5.0,   0.0,  1.0,  0.0, 
 
-    0.0,  1.0, -4.0,    0.0,  1.0,  0.0, // back green triangle
-   -0.5, -1.0, -4.0,    0.0,  1.0,  0.0,
-    0.5, -1.0, -4.0,    0.0,  1.0,  0.0
+    0.0,  3.0,  -5.0,   1.0,  1.0,  0.0, // yellow triagle
+   -3.0, -3.0,  -5.0,   1.0,  1.0,  0.0,
+    3.0, -3.0,  -5.0,   1.0,  1.0,  0.0 
 
   ]);
   
@@ -75,31 +71,29 @@ void main() {
   num fovYRadians = PI / 4;
   num aspectRatio = canvas.width / canvas.height;
   num zNear = 1.0;
-  num zFar = 10.0;
+  num zFar = 100.0;
   Matrix4 projMatrix = makePerspectiveMatrix(fovYRadians, aspectRatio, zNear, zFar);
   
-  Vector3 cameraPosition = new Vector3(0.0, 0.0, 5.0);
-  Vector3 cameraFocusPosition = new Vector3(0.0, 0.0, -100.0);
+  Vector3 cameraPosition = new Vector3(3.0, 3.0, 7.0);
+  Vector3 cameraFocusPosition = new Vector3(0.0, 0.0, 0.0);
   Vector3 upDirection = new Vector3(0.0, 1.0, 0.0);
   Matrix4 viewMatrix = makeViewMatrix(cameraPosition, cameraFocusPosition, upDirection);
   
   Matrix4 modelMatrix = new Matrix4.identity();
-  modelMatrix.setTranslation(new Vector3(-1.0, 0.0, 0.0));
   
   Matrix4 mvpMatrix = projMatrix * viewMatrix * modelMatrix;
   UniformLocation u_MvpMatrix = gl.getUniformLocation(program, 'u_MvpMatrix');
   gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.storage);
 
-  // try commenting out depth test
-  gl.enable(DEPTH_TEST);
+  // comment this out to see z-fighting
+  gl.enable(POLYGON_OFFSET_FILL);
   
+  gl.enable(DEPTH_TEST);
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
   
-  gl.clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT);
-  gl.drawArrays(TRIANGLES, 0, vertices.length ~/ 6);
+  gl.clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT); 
+  gl.drawArrays(TRIANGLES, 0, 3);
+  gl.polygonOffset(1.0, 1.0);
+  gl.drawArrays(TRIANGLES, 3, 3);
+}  
 
-  modelMatrix.setTranslation(new Vector3(1.0, 0.0, 0.0));
-  mvpMatrix = projMatrix * viewMatrix * modelMatrix;
-  gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.storage);
-  gl.drawArrays(TRIANGLES, 0, vertices.length ~/ 6);
-}
