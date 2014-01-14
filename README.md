@@ -1,4 +1,4 @@
-hello-web-gl
+hello-webgl
 ============
 
 Learning WebGL and Dart.

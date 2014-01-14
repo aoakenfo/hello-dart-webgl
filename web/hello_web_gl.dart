@@ -43,15 +43,10 @@ void main() {
   gl.useProgram(program);
   
   var vertices = new Float32List.fromList([
-    // position         // color
-    0.0,  2.5,  -5.0,   0.0,  1.0,  0.0, // green triangle
-   -2.5, -2.5,  -5.0,   0.0,  1.0,  0.0,
-    2.5, -2.5,  -5.0,   0.0,  1.0,  0.0, 
-
-    0.0,  3.0,  -5.0,   1.0,  1.0,  0.0, // yellow triagle
-   -3.0, -3.0,  -5.0,   1.0,  1.0,  0.0,
-    3.0, -3.0,  -5.0,   1.0,  1.0,  0.0 
-
+    // position      // color
+   -0.5, -0.5, 0.0,  0.0, 1.0, 0.0,
+    0.0,  0.5, 0.0,  1.0, 0.0, 0.0,
+    0.5, -0.5, 0.0,  0.0, 0.0, 1.0  
   ]);
   
   Buffer vertexBuffer = gl.createBuffer();
@@ -74,26 +69,45 @@ void main() {
   num zFar = 100.0;
   Matrix4 projMatrix = makePerspectiveMatrix(fovYRadians, aspectRatio, zNear, zFar);
   
-  Vector3 cameraPosition = new Vector3(3.0, 3.0, 7.0);
+  Vector3 cameraPosition = new Vector3(0.0, 0.0, 2.0);
   Vector3 cameraFocusPosition = new Vector3(0.0, 0.0, 0.0);
   Vector3 upDirection = new Vector3(0.0, 1.0, 0.0);
   Matrix4 viewMatrix = makeViewMatrix(cameraPosition, cameraFocusPosition, upDirection);
   
   Matrix4 modelMatrix = new Matrix4.identity();
-  
-  Matrix4 mvpMatrix = projMatrix * viewMatrix * modelMatrix;
+  Matrix4 mvpMatrix = new Matrix4.identity();
   UniformLocation u_MvpMatrix = gl.getUniformLocation(program, 'u_MvpMatrix');
-  gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.storage);
-
-  // comment this out to see z-fighting
-  gl.enable(POLYGON_OFFSET_FILL);
   
+  LabelElement label = new LabelElement()
+    ..text = 'use the left/right arrow keys';
+  DivElement div = new DivElement();
+  div.children.add(label);
+  document.body.children.add(div);
+  
+  Function draw = () {
+    mvpMatrix = projMatrix * viewMatrix * modelMatrix;
+    gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.storage);
+    gl.clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT); 
+    gl.drawArrays(TRIANGLES, 0, vertices.length ~/ 6);
+  };
+  
+  document.body.onKeyDown.listen((e){
+    switch(e.keyCode) {
+      case KeyCode.LEFT:
+        viewMatrix.rotateY(0.05);
+        break;
+        
+      case KeyCode.RIGHT:
+        viewMatrix.rotateY(-0.05);
+        break;
+    }
+    
+    draw();
+  });
+
   gl.enable(DEPTH_TEST);
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
   
-  gl.clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT); 
-  gl.drawArrays(TRIANGLES, 0, 3);
-  gl.polygonOffset(1.0, 1.0);
-  gl.drawArrays(TRIANGLES, 3, 3);
+  draw();
 }  
 
