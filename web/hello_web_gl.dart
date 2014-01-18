@@ -42,16 +42,41 @@ void main() {
   gl.linkProgram(program);
   gl.useProgram(program);
   
+  //    v6----- v5
+  //   /|      /|
+  //  v1------v0|
+  //  | |     | |
+  //  | |v7---|-|v4
+  //  |/      |/
+  //  v2------v3
   var vertices = new Float32List.fromList([
-    // position      // color
-   -0.5, -0.5, 0.0,  0.0, 1.0, 0.0,
-    0.0,  0.5, 0.0,  1.0, 0.0, 0.0,
-    0.5, -0.5, 0.0,  0.0, 0.0, 1.0  
+     // position          // color
+     1.0,  1.0,  1.0,     1.0,  1.0,  1.0,  // v0 white
+    -1.0,  1.0,  1.0,     1.0,  0.0,  1.0,  // v1 magenta
+    -1.0, -1.0,  1.0,     1.0,  0.0,  0.0,  // v2 red
+     1.0, -1.0,  1.0,     1.0,  1.0,  0.0,  // v3 yellow
+     1.0, -1.0, -1.0,     0.0,  1.0,  0.0,  // v4 green
+     1.0,  1.0, -1.0,     0.0,  1.0,  1.0,  // v5 cyan
+    -1.0,  1.0, -1.0,     0.0,  0.0,  1.0,  // v6 blue
+    -1.0, -1.0, -1.0,     0.0,  0.0,  0.0   // v7 black 
+  ]);
+  
+  var indices = new Uint8List.fromList([
+     0, 1, 2,   0, 2, 3,  // front
+     0, 3, 4,   0, 4, 5,  // right
+     0, 5, 6,   0, 6, 1,  // up
+     1, 6, 7,   1, 7, 2,  // left
+     7, 4, 3,   7, 3, 2,  // down
+     4, 7, 6,   4, 6, 5   // back
   ]);
   
   Buffer vertexBuffer = gl.createBuffer();
   gl.bindBuffer(ARRAY_BUFFER, vertexBuffer);
   gl.bufferDataTyped(ARRAY_BUFFER, vertices, STATIC_DRAW);
+  
+  Buffer indexBuffer  = gl.createBuffer();
+  gl.bindBuffer(ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(ELEMENT_ARRAY_BUFFER, indices, STATIC_DRAW);
   
   int a_Position = gl.getAttribLocation(program, 'a_Position');
   gl.vertexAttribPointer(a_Position, 3, FLOAT, false, 
@@ -69,45 +94,21 @@ void main() {
   num zFar = 100.0;
   Matrix4 projMatrix = makePerspectiveMatrix(fovYRadians, aspectRatio, zNear, zFar);
   
-  Vector3 cameraPosition = new Vector3(0.0, 0.0, 2.0);
+  Vector3 cameraPosition = new Vector3(3.0, 3.0, 7.0);
   Vector3 cameraFocusPosition = new Vector3(0.0, 0.0, 0.0);
   Vector3 upDirection = new Vector3(0.0, 1.0, 0.0);
   Matrix4 viewMatrix = makeViewMatrix(cameraPosition, cameraFocusPosition, upDirection);
   
   Matrix4 modelMatrix = new Matrix4.identity();
-  Matrix4 mvpMatrix = new Matrix4.identity();
+  
   UniformLocation u_MvpMatrix = gl.getUniformLocation(program, 'u_MvpMatrix');
+  Matrix4 mvpMatrix = projMatrix * viewMatrix * modelMatrix;
+  gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.storage);
   
-  LabelElement label = new LabelElement()
-    ..text = 'use the left/right arrow keys';
-  DivElement div = new DivElement();
-  div.children.add(label);
-  document.body.children.add(div);
-  
-  Function draw = () {
-    mvpMatrix = projMatrix * viewMatrix * modelMatrix;
-    gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.storage);
-    gl.clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT); 
-    gl.drawArrays(TRIANGLES, 0, vertices.length ~/ 6);
-  };
-  
-  document.body.onKeyDown.listen((e){
-    switch(e.keyCode) {
-      case KeyCode.LEFT:
-        viewMatrix.rotateY(0.05);
-        break;
-        
-      case KeyCode.RIGHT:
-        viewMatrix.rotateY(-0.05);
-        break;
-    }
-    
-    draw();
-  });
-
   gl.enable(DEPTH_TEST);
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
   
-  draw();
-}  
-
+  gl.clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT);
+  
+  gl.drawElements(TRIANGLES, indices.length, UNSIGNED_BYTE, 0);
+}
