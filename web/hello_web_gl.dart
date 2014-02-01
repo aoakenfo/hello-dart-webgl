@@ -9,6 +9,7 @@ attribute vec4 a_Position;
 attribute vec4 a_Color;
 attribute vec4 a_Normal;
 uniform mat4 u_MvpMatrix;
+uniform mat4 u_NormalMatrix;
 uniform vec3 u_LightColor;
 uniform vec3 u_LightDirection;
 uniform vec3 u_AmbientLightColor;
@@ -17,11 +18,11 @@ varying vec4 v_Color;
 void main() {
   gl_Position = u_MvpMatrix * a_Position;
   
-  vec3 normal = normalize(a_Normal.xyz);
+  vec4 normal = u_NormalMatrix * a_Normal;
   
   // dot product of light direction against orientation of surface (normal)
   // a negative dot product means θ is more than 90° and light is hitting the back of the surface
-  float nDotL = max(dot(u_LightDirection, normal), 0.0);
+  float nDotL = max(dot(u_LightDirection, normalize(normal.xyz)), 0.0);
   
   // take the surface color and mixin light color with intensity determined by angle
   vec3 diffuseColor = u_LightColor * a_Color.rgb * nDotL;
@@ -42,6 +43,9 @@ void main() {
 }
 ''';
 
+var tick;
+var animate = (num highResTime) => tick(highResTime);
+
 void main() {
   
   CanvasElement canvas = querySelector('#canvas');
@@ -50,16 +54,30 @@ void main() {
   Shader vertexShader = gl.createShader(VERTEX_SHADER);
   gl.shaderSource(vertexShader, vertexShaderSource);
   gl.compileShader(vertexShader);
-  print(gl.getShaderInfoLog(vertexShader));
+  Object compiled = gl.getShaderParameter(vertexShader, COMPILE_STATUS);
+  if (!compiled) {
+    String error = gl.getShaderInfoLog(vertexShader);
+    print('Failed to compile VERTEX shader: $error');
+  }
   
   Shader fragmentShader = gl.createShader(FRAGMENT_SHADER);
   gl.shaderSource(fragmentShader, fragmentShaderSource);
   gl.compileShader(fragmentShader);
+  compiled = gl.getShaderParameter(fragmentShader, COMPILE_STATUS);
+  if (!compiled) {
+    String error = gl.getShaderInfoLog(fragmentShader);
+    print('Failed to compile FRAGMENT shader: $error');
+  }
   
   Program program = gl.createProgram();
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
   gl.linkProgram(program);
+  Object linked = gl.getProgramParameter(program, LINK_STATUS);
+  if (!linked) {
+    String error = gl.getProgramInfoLog(program);
+    print('Failed to LINK program: $error');
+  }
   gl.useProgram(program);
   
   //    v6----- v5
@@ -152,6 +170,9 @@ void main() {
   UniformLocation u_AmbientLightColor = gl.getUniformLocation(program, 'u_AmbientLightColor');
   gl.uniform3f(u_AmbientLightColor, 0.2, 0.2, 0.2);
   
+  UniformLocation u_NormalMatrix = gl.getUniformLocation(program, 'u_NormalMatrix');
+  Matrix4 normalMatrix = new Matrix4.identity();
+  
   // mvp -------------------------------------------------------
   num fovYRadians = PI / 4;
   num aspectRatio = canvas.width / canvas.height;
@@ -173,6 +194,32 @@ void main() {
   // render ----------------------------------------------------
   gl.enable(DEPTH_TEST);
   gl.clearColor(0.5, 0.5, 0.5, 1.0);
-  gl.clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT);
-  gl.drawElements(TRIANGLES, indices.length, UNSIGNED_BYTE, 0);
+  
+  num angle = 0.0;
+  num radian = 0.0;
+  num lastTime = 0.0;
+  num speed = 40.0;
+  
+  tick = (num highResTime) {
+      window.requestAnimationFrame(animate);
+      
+      num elapsedTime = highResTime - lastTime;
+      lastTime = highResTime;
+      
+      angle = (speed * elapsedTime / 1000.0);
+      radian = PI * angle / 180.0;
+      
+      modelMatrix.rotateY(radian);
+      mvpMatrix = projMatrix * viewMatrix * modelMatrix;
+      gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.storage);
+      
+      normalMatrix.copyInverse(modelMatrix);
+      normalMatrix.transpose();
+      gl.uniformMatrix4fv(u_NormalMatrix, false, normalMatrix.storage);
+      
+      gl.clear(COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT);
+      gl.drawElements(TRIANGLES, indices.length, UNSIGNED_BYTE, 0);
+    };
+    
+    animate(0);
 }
