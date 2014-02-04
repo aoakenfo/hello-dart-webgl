@@ -9,24 +9,29 @@ attribute vec4 a_Position;
 attribute vec4 a_Color;
 attribute vec4 a_Normal;
 uniform mat4 u_MvpMatrix;
+uniform mat4 u_ModelMatrix;
 uniform mat4 u_NormalMatrix;
 uniform vec3 u_LightColor;
-uniform vec3 u_LightDirection;
+uniform vec3 u_LightPosition;
 uniform vec3 u_AmbientLightColor;
 varying vec4 v_Color;
 
 void main() {
   gl_Position = u_MvpMatrix * a_Position;
   
-  vec4 normal = u_NormalMatrix * a_Normal;
+  vec3 normal = normalize(vec3(u_NormalMatrix * a_Normal));
+  vec3 vertexInWorldSpace = vec3(u_ModelMatrix * a_Position);
   
+  // unlike directional light (parallel rays), direction of the point light varies by position
+  vec3 pointLightDirection = normalize(u_LightPosition - vertexInWorldSpace);
+
   // dot product of light direction against orientation of surface (normal)
   // a negative dot product means θ is more than 90° and light is hitting the back of the surface
-  float nDotL = max(dot(u_LightDirection, normalize(normal.xyz)), 0.0);
-  
+  float nDotL = max(dot(pointLightDirection, normal), 0.0);
+
   // take the surface color and mixin light color with intensity determined by angle
   vec3 diffuseColor = u_LightColor * a_Color.rgb * nDotL;
-
+  
   // take the surface color and mix with ambient color
   vec3 ambientColor = u_AmbientLightColor * a_Color.rgb;
 
@@ -88,12 +93,12 @@ void main() {
   //  |/      |/
   //  v2------v3
   var vertices = new Float32List.fromList([
-    1.0, 1.0, 1.0,  -1.0, 1.0, 1.0,  -1.0,-1.0, 1.0,   1.0,-1.0, 1.0,   // v0-v1-v2-v3 front
-    1.0, 1.0, 1.0,   1.0,-1.0, 1.0,   1.0,-1.0,-1.0,   1.0, 1.0,-1.0,   // v0-v3-v4-v5 right
-    1.0, 1.0, 1.0,   1.0, 1.0,-1.0,  -1.0, 1.0,-1.0,  -1.0, 1.0, 1.0,   // v0-v5-v6-v1 up
-   -1.0, 1.0, 1.0,  -1.0, 1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0,-1.0, 1.0,   // v1-v6-v7-v2 left
-   -1.0,-1.0,-1.0,   1.0,-1.0,-1.0,   1.0,-1.0, 1.0,  -1.0,-1.0, 1.0,   // v7-v4-v3-v2 down
-    1.0,-1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0, 1.0,-1.0,   1.0, 1.0,-1.0    // v4-v7-v6-v5 back
+    2.0, 2.0, 2.0,  -2.0, 2.0, 2.0,  -2.0,-2.0, 2.0,   2.0,-2.0, 2.0, // v0-v1-v2-v3 front
+    2.0, 2.0, 2.0,   2.0,-2.0, 2.0,   2.0,-2.0,-2.0,   2.0, 2.0,-2.0, // v0-v3-v4-v5 right
+    2.0, 2.0, 2.0,   2.0, 2.0,-2.0,  -2.0, 2.0,-2.0,  -2.0, 2.0, 2.0, // v0-v5-v6-v1 up
+   -2.0, 2.0, 2.0,  -2.0, 2.0,-2.0,  -2.0,-2.0,-2.0,  -2.0,-2.0, 2.0, // v1-v6-v7-v2 left
+   -2.0,-2.0,-2.0,   2.0,-2.0,-2.0,   2.0,-2.0, 2.0,  -2.0,-2.0, 2.0, // v7-v4-v3-v2 down
+    2.0,-2.0,-2.0,  -2.0,-2.0,-2.0,  -2.0, 2.0,-2.0,   2.0, 2.0,-2.0  // v4-v7-v6-v5 back
   ]);
   
   var colors = new Float32List.fromList([
@@ -162,10 +167,9 @@ void main() {
   UniformLocation u_LightColor = gl.getUniformLocation(program, 'u_LightColor');
   gl.uniform3f(u_LightColor, 1.0, 1.0, 1.0);
   
-  UniformLocation u_LightDirection = gl.getUniformLocation(program, 'u_LightDirection');
-  Vector3 lightDir = new Vector3(0.5, 3.0, 4.0);
-  lightDir.normalize();
-  gl.uniform3fv(u_LightDirection, lightDir.storage);
+  UniformLocation u_LightPosition = gl.getUniformLocation(program, 'u_LightPosition');
+  Vector3 lightPosition = new Vector3(2.3, 4.0, 3.5);
+  gl.uniform3fv(u_LightPosition, lightPosition.storage);
   
   UniformLocation u_AmbientLightColor = gl.getUniformLocation(program, 'u_AmbientLightColor');
   gl.uniform3f(u_AmbientLightColor, 0.2, 0.2, 0.2);
@@ -174,17 +178,18 @@ void main() {
   Matrix4 normalMatrix = new Matrix4.identity();
   
   // mvp -------------------------------------------------------
-  num fovYRadians = PI / 4;
+  num fovYRadians = PI / 6;
   num aspectRatio = canvas.width / canvas.height;
   num zNear = 1.0;
   num zFar = 100.0;
   Matrix4 projMatrix = makePerspectiveMatrix(fovYRadians, aspectRatio, zNear, zFar);
   
-  Vector3 cameraPosition = new Vector3(3.0, 3.0, 7.0);
+  Vector3 cameraPosition = new Vector3(6.0, 6.0, 14.0);
   Vector3 cameraFocusPosition = new Vector3(0.0, 0.0, 0.0);
   Vector3 upDirection = new Vector3(0.0, 1.0, 0.0);
   Matrix4 viewMatrix = makeViewMatrix(cameraPosition, cameraFocusPosition, upDirection);
   
+  UniformLocation u_ModelMatrix = gl.getUniformLocation(program, 'u_ModelMatrix');
   Matrix4 modelMatrix = new Matrix4.identity();
   
   UniformLocation u_MvpMatrix = gl.getUniformLocation(program, 'u_MvpMatrix');
@@ -198,7 +203,7 @@ void main() {
   num angle = 0.0;
   num radian = 0.0;
   num lastTime = 0.0;
-  num speed = 40.0;
+  num speed = 10.0;
   
   tick = (num highResTime) {
       window.requestAnimationFrame(animate);
@@ -210,6 +215,8 @@ void main() {
       radian = PI * angle / 180.0;
       
       modelMatrix.rotateY(radian);
+      gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.storage);
+      
       mvpMatrix = projMatrix * viewMatrix * modelMatrix;
       gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.storage);
       
